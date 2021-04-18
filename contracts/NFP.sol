@@ -15,12 +15,14 @@ contract NFP is ERC721URIStorage, Ownable {
     constructor() ERC721("YOLO Non-fungible people", "NFP") {
         console.log("Deploy NFP");
     }
-    
-    function mint(address to, bytes memory sig, string memory handle) public {
-        address signer = keccak256(abi.encodePacked(to, handle))
-        .toEthSignedMessageHash()
-        .recover(sig);
-        
+
+    function mint(
+        address to,
+        bytes memory sig,
+        string memory handle
+    ) public {
+        address signer = keccak256(abi.encodePacked(to, handle)).toEthSignedMessageHash().recover(sig);
+
         console.log("signer %s", signer);
 
         require(signer == owner(), "npf/invalid-signature");
