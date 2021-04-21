@@ -44,14 +44,24 @@ contract NFP is ERC721URIStorage, Ownable {
         baseURI = str;
     }
 
+    // Send the fees collected from the minting
+    function collectFees(address to) public onlyOwner {
+        uint256 balance = address(this).balance;
+        payable(to).transfer(balance);
+    }
+
     // -- End Admin --
 
+    // Mint a NFT with an ECDSA signature
     function mint(
         address to,
         string memory handle,
         string memory cid,
         bytes memory sig
-    ) public onlyMintingPeriod returns(uint256) {
+    ) public payable onlyMintingPeriod returns(uint256) {
+
+        // Check payment
+        require(msg.value >= currentMintingPrice(), "nfp/insufficient-payment");
 
         // Verify minting authorization 
         address signer = keccak256(abi.encodePacked(to, handle, cid)).toEthSignedMessageHash().recover(sig);
@@ -64,6 +74,10 @@ contract NFP is ERC721URIStorage, Ownable {
         _safeMint(to, count);
         _setTokenURI(count, cid);
         return count;
+    }
+
+    function currentMintingPrice() public view returns(uint256) {
+        return count * 0.001 ether;        
     }
 
     // -- Internal --
