@@ -10,24 +10,68 @@ import "hardhat/console.sol";
 contract NFP is ERC721URIStorage, Ownable {
     using ECDSA for bytes32;
 
+    address public  minter;
+
     uint256 public count = 0;
 
-    constructor() ERC721("YOLO Non-fungible people", "NFP") {
-        console.log("Deploy NFP");
+    uint48 public mintingPeriod = 61 days;
+
+    uint256 public mintingStarts;
+    
+    string public baseURI;
+
+    constructor(address minter_, address owner_, string memory baseURI_) ERC721("NFPeople", "NFP") {
+        baseURI = baseURI_;
+        minter = minter_;
+        mintingStarts = block.timestamp;
+        transferOwnership(owner_);
     }
+
+    modifier onlyMintingPeriod() {
+        require(block.timestamp < mintingStarts + mintingPeriod, "nfp/minting-period-expired");
+        _;
+    }
+
+    // -- Admin --
+    
+    // Set the minter role to a new address 
+    function setMinter(address to) public onlyOwner {
+        minter = to;
+    }
+
+    // Set the base URI for the IPFS cid
+    function setBaseURI(string memory str) public onlyOwner {
+        baseURI = str;
+    }
+
+    // -- End Admin --
 
     function mint(
         address to,
-        bytes memory sig,
-        string memory handle
-    ) public {
-        address signer = keccak256(abi.encodePacked(to, handle)).toEthSignedMessageHash().recover(sig);
+        string memory handle,
+        string memory cid,
+        bytes memory sig
+    ) public onlyMintingPeriod returns(uint256) {
 
+        // Verify minting authorization 
+        address signer = keccak256(abi.encodePacked(to, handle, cid)).toEthSignedMessageHash().recover(sig);
         console.log("signer %s", signer);
+        require(signer == minter, "npf/invalid-signature");
 
-        require(signer == owner(), "npf/invalid-signature");
 
+        // Mint the NFT 
         count += 1;
-        super._safeMint(to, count);
+        _safeMint(to, count);
+        _setTokenURI(count, cid);
+        return count;
     }
+
+    // -- Internal --
+
+    // Implement the abstract baseURI getter
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
+    }
+
+    // -- End Internal --
 }
