@@ -1,91 +1,37 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "hardhat/console.sol";
+pragma solidity >=0.6.2 <0.8.0;
+pragma abicoder v2;
 
-contract NFP is ERC721URIStorage, Ownable {
-    using ECDSA for bytes32;
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721BurnableUpgradeable.sol";
+import "./lazy-mint/ERC721Lazy.sol";
+import "./utils/HasContractURI.sol";
 
-    address public  minter;
+contract NFP is OwnableUpgradeable, ERC721BurnableUpgradeable, ERC721Lazy, HasContractURI {
 
-    uint256 public count = 0;
+    event CreateERC721RaribleUser(address owner, string name, string symbol);
 
-    uint48 public mintingPeriod = 61 days;
-
-    uint256 public mintingStarts;
-    
-    string public baseURI;
-
-    constructor(address minter_, address owner_, string memory baseURI_) ERC721("NFPeople", "NFP") {
-        baseURI = baseURI_;
-        minter = minter_;
-        mintingStarts = block.timestamp;
-        transferOwnership(owner_);
+    function __ERC721RaribleUser_init(string memory _name, string memory _symbol, string memory baseURI, string memory contractURI, address[] memory operators) external initializer {
+        _setBaseURI(baseURI);
+        __ERC721Lazy_init_unchained();
+        __Context_init_unchained();
+        __ERC165_init_unchained();
+        __Ownable_init_unchained();
+        __ERC721Burnable_init_unchained();
+        __Mint721Validator_init_unchained();
+        __HasContractURI_init_unchained(contractURI);
+        __RoyaltiesV2Upgradeable_init_unchained();
+        __ERC721_init_unchained(_name, _symbol);
+        for(uint i = 0; i < operators.length; i++) {
+            setApprovalForAll(operators[i], true);
+        }
+        emit CreateERC721RaribleUser(_msgSender(), _name, _symbol);
     }
 
-    modifier onlyMintingPeriod() {
-        require(block.timestamp < mintingStarts + mintingPeriod, "nfp/minting-period-expired");
-        _;
+    function mintAndTransfer(LibERC721LazyMint.Mint721Data memory data, address to) public override virtual {
+        require(owner() == data.creators[0].account, "minter is not the owner");
+        super.mintAndTransfer(data, to);
     }
-
-    // -- Admin --
-    
-    // Set the minter role to a new address 
-    function setMinter(address to) public onlyOwner {
-        minter = to;
-    }
-
-    // Set the base URI for the IPFS cid
-    function setBaseURI(string memory str) public onlyOwner {
-        baseURI = str;
-    }
-
-    // Send the fees collected from the minting
-    function collectFees(address to) public onlyOwner {
-        uint256 balance = address(this).balance;
-        payable(to).transfer(balance);
-    }
-
-    // -- End Admin --
-
-    // Mint a NFT with an ECDSA signature
-    function mint(
-        address to,
-        string memory handle,
-        string memory cid,
-        bytes memory sig
-    ) public payable onlyMintingPeriod returns(uint256) {
-
-        // Check payment
-        require(msg.value >= currentMintingPrice(), "nfp/insufficient-payment");
-
-        // Verify minting authorization 
-        address signer = keccak256(abi.encodePacked(to, handle, cid)).toEthSignedMessageHash().recover(sig);
-        console.log("signer %s", signer);
-        require(signer == minter, "npf/invalid-signature");
-
-
-        // Mint the NFT 
-        count += 1;
-        _safeMint(to, count);
-        _setTokenURI(count, cid);
-        return count;
-    }
-
-    function currentMintingPrice() public view returns(uint256) {
-        return count * 0.001 ether;        
-    }
-
-    // -- Internal --
-
-    // Implement the abstract baseURI getter
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
-    }
-
-    // -- End Internal --
+    uint256[50] private __gap;
 }
