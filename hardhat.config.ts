@@ -1,108 +1,73 @@
+import { HardhatUserConfig, task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
-import "@typechain/hardhat";
-import "hardhat-gas-reporter";
-import "solidity-coverage";
 
-import "./tasks/accounts";
-import "./tasks/clean";
+task("accounts", "Prints the list of accounts", async (args, hre) => {
+  const accounts = await hre.ethers.getSigners();
 
-import { resolve } from "path";
-
-import { config as dotenvConfig } from "dotenv";
-import { HardhatUserConfig } from "hardhat/config";
-import { NetworkUserConfig } from "hardhat/types";
-
-dotenvConfig({ path: resolve(__dirname, "./.env") });
-
-const chainIds = {
-  ganache: 1337,
-  goerli: 5,
-  hardhat: 31337,
-  kovan: 42,
-  mainnet: 1,
-  rinkeby: 4,
-  ropsten: 3,
-};
-
-// Ensure that we have all the environment variables we need.
-let mnemonic: string;
-if (!process.env.MNEMONIC) {
-  throw new Error("Please set your MNEMONIC in a .env file");
-} else {
-  mnemonic = process.env.MNEMONIC;
-}
-
-let infuraApiKey: string;
-if (!process.env.INFURA_API_KEY) {
-  throw new Error("Please set your INFURA_API_KEY in a .env file");
-} else {
-  infuraApiKey = process.env.INFURA_API_KEY;
-}
-
-function createTestnetConfig(network: keyof typeof chainIds): NetworkUserConfig {
-  const url: string = "https://" + network + ".infura.io/v3/" + infuraApiKey;
-  return {
-    accounts: {
-      count: 10,
-      initialIndex: 0,
-      mnemonic,
-      path: "m/44'/60'/0'/0",
-    },
-    chainId: chainIds[network],
-    url,
-  };
-}
+  for (const account of accounts) {
+    console.log(account.address);
+  }
+});
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
-  gasReporter: {
-    currency: "USD",
-    enabled: process.env.REPORT_GAS ? true : false,
-    excludeContracts: [],
-    src: "./contracts",
-  },
-  etherscan: {
-    apiKey: "9RAG8MM3Y6FZ3KVI5SPDB7WHTRZH7SK4XF",
-  },
-  networks: {
-    hardhat: {
-      accounts: {
-        mnemonic,
-      },
-      chainId: chainIds.hardhat,
-    },
-    goerli: createTestnetConfig("goerli"),
-    kovan: createTestnetConfig("kovan"),
-    rinkeby: createTestnetConfig("rinkeby"),
-    ropsten: createTestnetConfig("ropsten"),
-  },
-  paths: {
-    artifacts: "./artifacts",
-    cache: "./cache",
-    sources: "./contracts",
-    tests: "./test",
-  },
   solidity: {
     version: "0.7.6",
     settings: {
-      metadata: {
-        // Not including the metadata hash
-        // https://github.com/paulrberg/solidity-template/issues/31
-        bytecodeHash: "none",
-      },
-      // You should disable the optimizer when debugging
-      // https://hardhat.org/hardhat-network/#solidity-optimizer-support
       optimizer: {
         enabled: true,
-        runs: 999999,
+        runs: 200,
       },
     },
   },
-  typechain: {
-    outDir: "typechain",
-    target: "ethers-v5",
+  networks: {
+    hardhat: {
+      gasPrice: 0,
+      forking: {
+        url: process.env.ETH_RPC_MAINNET,
+        blockNumber: 12536700,
+      },
+    },
+    mainnet: {
+      url: process.env.ETH_RPC_MAINNET,
+    },
   },
 };
+
+if (process.env.ETH_RPC_RINKEBY) {
+  config.networks["rinkeby"] = {
+    url: process.env.ETH_RPC_RINKEBY,
+  };
+}
+
+if (process.env.ETH_RPC_KOVAN) {
+  config.networks["kovan"] = {
+    url: process.env.ETH_RPC_KOVAN,
+  };
+}
+
+if (process.env.ETHERSCAN_API_KEY) {
+  config.etherscan = {
+    apiKey: process.env.ETHERSCAN_API_KEY,
+  };
+}
+
+if (process.env.GAS_PRICE) {
+  const gasPrice = parseInt(process.env.GAS_PRICE) * 1e9;
+
+  // Safety check to not spend too much gas
+  if (gasPrice > 500 * 1e9) {
+    throw Error("Gas price too high");
+  }
+
+  config.networks.mainnet.gasPrice = gasPrice;
+  if (config.networks.kovan) config.networks.kovan.gasPrice = gasPrice;
+  if (config.networks.rinkeby) config.networks.rinkeby.gasPrice = gasPrice;
+}
+
+if (process.env.PRIV_KEY) {
+  if (config.networks.kovan) config.networks.kovan.accounts = [process.env.PRIV_KEY];
+  if (config.networks.rinkeby) config.networks.rinkeby.accounts = [process.env.PRIV_KEY];
+}
 
 export default config;

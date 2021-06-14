@@ -1,26 +1,17 @@
+
 {
   "compilerOptions": {
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "lib": ["es5", "es6"],
+    "target": "es2019",
     "module": "commonjs",
-    "moduleResolution": "node",
-    "noImplicitAny": true,
+    "esModuleInterop": true,
     "outDir": "dist",
-    "resolveJsonModule": true,
-    "sourceMap": true,
-    "strict": true,
-    "target": "es5"
+    "resolveJsonModule": true
   },
-  "exclude": ["node_modules"],
-  "include": [
-    "artifacts/**/*",
-    "artifacts/**/*.json",
-    "scripts/**/*",
-    "tasks/**/*",
-    "test/**/*",
-    "typechain/**/*",
-    "types/**/*",
-    "hardhat.config.ts"
+  "include": ["./tasks", "./test"],
+  "files": [
+    "./hardhat.config.ts",
+    "node_modules/@nomiclabs/buidler-ethers/src/type-extensions.d.ts",
+    "node_modules/buidler-typechain/src/type-extensions.d.ts",
+    "node_modules/@nomiclabs/buidler-waffle/src/type-extensions.d.ts",
   ]
 }

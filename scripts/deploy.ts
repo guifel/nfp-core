@@ -1,4 +1,5 @@
 import { Contract, ContractFactory } from "ethers";
+import "@nomiclabs/hardhat-waffle";
 import { ethers } from "hardhat";
 
 async function main(): Promise<void> {
