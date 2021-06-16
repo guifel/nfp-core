@@ -86,7 +86,6 @@ async function signLazyMintMessage(
 		{ ...form, tokenURI: form.uri },
 		 ERC721Types
 	);
-	console.log("signing", data)
 	return signTypedData(account, data);
 }
 
@@ -99,8 +98,7 @@ export async function createTestLazyMint(): Promise<Omit<LazyMint, "signatures">
   const creator = wallet.address;
   console.log("creator is", creator);
 
-  //const tokenId = await generateTokenId("ERC721", creator)
-  const tokenId = "39445653083828419431608802961936632231773146647750749525047168710160347561985";
+  const tokenId = await generateTokenId("ERC721", creator)
   console.log("generated tokenId", tokenId);
   return {
     "@type": "ERC721",
@@ -114,7 +112,7 @@ export async function createTestLazyMint(): Promise<Omit<LazyMint, "signatures">
 
 export async function main(): Promise<any> {
   const form = await createTestLazyMint();
-  return await signAndPutLazyMint(form);
+  console.log(await signAndPutLazyMint(form))
 }
 
 main();
