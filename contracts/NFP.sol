@@ -11,8 +11,12 @@ import "./utils/HasContractURI.sol";
 contract NFP is OwnableUpgradeable, ERC721BurnableUpgradeable, ERC721Lazy, HasContractURI {
 
     event CreateERC721RaribleUser(address owner, string name, string symbol);
+    
+    constructor(address[] memory operators) public {
+        __ERC721RaribleUser_init("Non-Fungible People", "NFP", "ipfs:/", "", operators);
+    }
 
-    function __ERC721RaribleUser_init(string memory _name, string memory _symbol, string memory baseURI, string memory contractURI, address[] memory operators) external initializer {
+    function __ERC721RaribleUser_init(string memory _name, string memory _symbol, string memory baseURI, string memory contractURI, address[] memory operators) internal initializer {
         _setBaseURI(baseURI);
         __ERC721Lazy_init_unchained();
         __Context_init_unchained();
