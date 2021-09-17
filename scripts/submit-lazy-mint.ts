@@ -69,24 +69,24 @@ function getAddress(type: "ERC721" | "ERC1155"): string {
 }
 
 async function signLazyMintMessage(
-	form: Omit<LazyMint, "signatures">,
-	account: string,
-	chainId: number,
-	verifyingContract: string
+  form: Omit<LazyMint, "signatures">,
+  account: string,
+  chainId: number,
+  verifyingContract: string
 ) {
-	const typeName = form["@type"] === "ERC721" ? "Mint721" : "Mint1155"
-	const data = createTypeData(
-		{
-			name: typeName,
-			version: "1",
-			chainId,
-			verifyingContract
-		},
-		typeName,
-		{ ...form, tokenURI: form.uri },
-		 ERC721Types
-	);
-	return signTypedData(account, data);
+  const typeName = form["@type"] === "ERC721" ? "Mint721" : "Mint1155";
+  const data = createTypeData(
+    {
+      name: typeName,
+      version: "1",
+      chainId,
+      verifyingContract,
+    },
+    typeName,
+    { ...form, tokenURI: form.uri },
+    ERC721Types
+  );
+  return signTypedData(account, data);
 }
 
 export async function createTestLazyMint(): Promise<Omit<LazyMint, "signatures">> {
@@ -98,13 +98,13 @@ export async function createTestLazyMint(): Promise<Omit<LazyMint, "signatures">
   const creator = wallet.address;
   console.log("creator is", creator);
 
-  const tokenId = await generateTokenId("ERC721", creator)
+  const tokenId = await generateTokenId("ERC721", creator);
   console.log("generated tokenId", tokenId);
   return {
     "@type": "ERC721",
     contract: getAddress("ERC721"),
     tokenId: tokenId,
-    uri: "/ipfs/QmWLsBu6nS4ovaHbGAXprD1qEssJu4r5taQfB74sCG51tp",
+    uri: "/ipfs/QmTWR82f5Xbf3HvC7ZjK5L78RREERyDdK7yfZCTFmNiewB",
     creators: [{ account: creator, value: "10000" }],
     royalties: [],
   };
@@ -112,7 +112,21 @@ export async function createTestLazyMint(): Promise<Omit<LazyMint, "signatures">
 
 export async function main(): Promise<any> {
   const form = await createTestLazyMint();
-  console.log(await signAndPutLazyMint(form))
+  console.log(await signAndPutLazyMint(form));
 }
 
-main();
+export const printNextTokenId = async() => {
+  if (!process.env.PRIV_KEY_CREATOR) {
+    throw Error("Specify PRIV_KEY_CREATOR");
+  }
+
+  const wallet = new ethers.Wallet(process.env.PRIV_KEY_CREATOR);
+  const creator = wallet.address;
+  console.log("creator is", creator);
+
+  const tokenId = await generateTokenId("ERC721", creator);
+  console.log(await tokenId)
+}
+// main();
+printNextTokenId()
+
